@@ -1,0 +1,283 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-display: "Fraunces", Georgia, serif;
+  --font-serif: "Newsreader", Georgia, serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --ease-observatory: cubic-bezier(0.22, 1, 0.36, 1);
+  --hairline: rgba(23, 21, 18, 0.14);
+  --hairline-strong: rgba(23, 21, 18, 0.32);
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-paper-50 font-sans text-ink-800 antialiased;
+  }
+
+  ::selection {
+    @apply bg-frost-300/50 text-ink-950;
+  }
+
+  /* 细颗粒噪点，纸面质感 */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 90;
+    opacity: 0.05;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' /%3E%3C/svg%3E");
+  }
+
+  :focus-visible {
+    outline: 1.5px solid var(--hairline-strong);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+}
+
+@layer components {
+  .hairline-b {
+    border-bottom: 1px solid var(--hairline);
+  }
+  .hairline-t {
+    border-top: 1px solid var(--hairline);
+  }
+
+  /* 小写 caps 眉题 */
+  .eyebrow {
+    @apply font-sans text-[11px] font-medium uppercase tracking-[0.22em] text-ink-600;
+  }
+
+  /* 胶囊按钮 */
+  .pill {
+    @apply inline-flex items-center gap-2 rounded-full border px-5 py-2.5 font-sans text-[13px] font-medium transition-all duration-500;
+    border-color: var(--hairline-strong);
+    transition-timing-function: var(--ease-observatory);
+  }
+  .pill:hover {
+    @apply bg-ink-950 text-paper-50;
+    border-color: transparent;
+  }
+
+  .pill-filter {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 font-sans text-[12px] transition-all duration-500;
+    border-color: var(--hairline);
+    color: theme("colors.ink.700");
+    transition-timing-function: var(--ease-observatory);
+  }
+  .pill-filter:hover {
+    border-color: var(--hairline-strong);
+  }
+  .pill-filter[data-active="true"] {
+    @apply border-transparent bg-ink-950 text-paper-50;
+  }
+  .pill-filter .count {
+    @apply text-[10px] opacity-60;
+  }
+}
+
+/* ---------- 导航：sans → serif italic 互换 ---------- */
+.nav-swap {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  line-height: 1.2;
+}
+.nav-swap .swap-a,
+.nav-swap .swap-b {
+  display: block;
+  transition: transform 0.55s var(--ease-observatory);
+}
+.nav-swap .swap-b {
+  position: absolute;
+  inset: 0;
+  transform: translateY(110%);
+  font-family: var(--font-serif);
+  font-style: italic;
+}
+.nav-swap:hover .swap-a,
+.nav-swap:focus-visible .swap-a {
+  transform: translateY(-110%);
+}
+.nav-swap:hover .swap-b,
+.nav-swap:focus-visible .swap-b {
+  transform: translateY(0);
+}
+
+/* ---------- 文章索引网格 ---------- */
+.writing-grid:hover .post-item:not(:hover) {
+  opacity: 0.55;
+}
+.post-item {
+  transition: opacity 0.6s var(--ease-observatory);
+}
+.post-item .cover-media {
+  transition:
+    transform 0.9s var(--ease-observatory),
+    filter 0.9s var(--ease-observatory);
+}
+.post-item:hover .cover-media {
+  transform: scale(1.035);
+  filter: saturate(1.08) contrast(1.03);
+}
+.post-item .post-title {
+  transition: transform 0.6s var(--ease-observatory);
+}
+.post-item:hover .post-title {
+  transform: translateX(6px);
+}
+
+/* ---------- 文章正文排版 ---------- */
+.prose-article {
+  @apply font-serif text-[18px] leading-[1.8] text-ink-800;
+}
+.prose-article > p {
+  @apply my-7;
+}
+.prose-article h2 {
+  @apply font-display text-[1.65rem] font-medium tracking-tight text-ink-950;
+  margin-top: 3.5rem;
+  margin-bottom: 1.1rem;
+  scroll-margin-top: 6rem;
+}
+.prose-article h3 {
+  @apply font-display text-[1.25rem] font-medium tracking-tight text-ink-950;
+  margin-top: 2.6rem;
+  margin-bottom: 0.9rem;
+  scroll-margin-top: 6rem;
+}
+.prose-article a {
+  @apply text-ink-950 underline decoration-frost-500/60 underline-offset-4 transition-colors hover:decoration-ink-950;
+}
+.prose-article strong {
+  @apply font-semibold text-ink-950;
+}
+.prose-article ul {
+  @apply my-7 ml-5 list-disc space-y-2.5 marker:text-frost-500;
+}
+.prose-article ol {
+  @apply my-7 ml-5 list-decimal space-y-2.5 marker:text-frost-500;
+}
+.prose-article blockquote {
+  @apply my-10 border-l pl-7 font-display text-[1.2rem] italic leading-[1.7] text-ink-800;
+  border-color: var(--hairline-strong);
+}
+.prose-article blockquote p {
+  @apply my-3;
+}
+.prose-article code {
+  @apply rounded bg-paper-200/80 px-1.5 py-0.5 font-mono text-[0.82em] text-ink-900;
+}
+.prose-article pre {
+  @apply my-0 overflow-x-auto p-5;
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+.prose-article pre code {
+  @apply bg-transparent p-0 text-ink-800;
+}
+.prose-article hr {
+  @apply my-14;
+  border-color: var(--hairline);
+}
+.prose-article img {
+  @apply my-10 rounded-[6px];
+}
+.prose-article table {
+  @apply my-10 w-full border-collapse font-sans text-[14px];
+}
+.prose-article th {
+  @apply hairline-b pb-3 pt-1 text-left font-medium text-ink-950;
+}
+.prose-article td {
+  @apply hairline-b py-3 pr-4 align-top;
+}
+
+/* 代码块外框（由服务端 transform 生成） */
+.codeblock {
+  @apply my-9 overflow-hidden rounded-[8px] border bg-paper-100/80;
+  border-color: var(--hairline);
+}
+.codeblock-bar {
+  @apply flex items-center justify-between border-b px-4 py-2;
+  border-color: var(--hairline);
+}
+.codeblock-lang {
+  @apply font-mono text-[11px] uppercase tracking-[0.14em] text-ink-500;
+}
+.codeblock-copy {
+  @apply font-sans text-[11px] text-ink-500 transition-colors hover:text-ink-950;
+}
+.codeblock-copy[data-copied="true"] {
+  @apply text-frost-600;
+}
+
+/* TOC */
+.toc-link {
+  @apply block border-l py-1 pl-4 font-sans text-[12.5px] leading-relaxed text-ink-500 transition-colors duration-300;
+  border-color: var(--hairline);
+}
+.toc-link:hover {
+  @apply text-ink-900;
+}
+.toc-link[data-active="true"] {
+  @apply border-ink-950 text-ink-950;
+}
+
+/* ---------- 入场动效（仅 opacity/transform） ---------- */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 非 JS 环境下的保底入场；JS 转场会接管 */
+[data-enter] {
+  animation: rise 0.9s var(--ease-observatory) both;
+}
+[data-enter="1"] {
+  animation-delay: 0.08s;
+}
+[data-enter="2"] {
+  animation-delay: 0.16s;
+}
+[data-enter="3"] {
+  animation-delay: 0.24s;
+}
+
+/* 转场期间锁定指针与滚轮 */
+.is-transitioning,
+.is-transitioning * {
+  pointer-events: none !important;
+}
+
+/* ---------- reduced-motion：关闭一切动态 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  [data-enter] {
+    animation: none;
+  }
+}
