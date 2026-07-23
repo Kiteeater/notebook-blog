@@ -2,7 +2,7 @@ import { getAllPosts } from "@/lib/posts";
 
 export const dynamic = "force-static";
 
-const SITE_URL = "https://example.com"; // [待替换：真实域名]
+const SITE_URL = "https://kiteeater.vercel.app";
 const SITE_TITLE = "思考的碎片 — Pieces of Memory";
 const SITE_DESC = "一个关于编程、AI、系统设计与个人思考的个人研究观测站。";
 
