@@ -4,7 +4,37 @@ import matter from "gray-matter";
 import { remark } from "remark";
 import remarkGfm from "remark-gfm";
 import remarkHtml from "remark-html";
-import type { Heading, Post, PostMeta, Topic } from "./types";
+import type { Heading, Post, PostMeta } from "./types";
+
+/**
+ * 发现所有 markdown 文章（slug + 文件绝对路径 + category）。
+ *
+ * 目录结构约定（只读一层）：
+ * - `CONTENT/<dir>/<slug>.md` → category = <dir>（取目录名作为分类 key）
+ * - `CONTENT/<slug>.md`（平铺）→ category = undefined（兜底显示「未分类」）
+ *
+ * slug 永远是文件名（不含目录），保证 `/writing/<slug>` 路由稳定。
+ */
+function discoverPosts(): { slug: string; file: string; category: string | undefined }[] {
+  ensureDir();
+  const out: { slug: string; file: string; category: string | undefined }[] = [];
+
+  for (const entry of fs.readdirSync(CONTENT_DIR, { withFileTypes: true })) {
+    if (entry.isFile() && entry.name.endsWith(".md")) {
+      const slug = entry.name.replace(/\.md$/, "");
+      out.push({ slug, file: path.join(CONTENT_DIR, entry.name), category: undefined });
+    } else if (entry.isDirectory()) {
+      const dir = path.join(CONTENT_DIR, entry.name);
+      for (const name of fs.readdirSync(dir)) {
+        if (!name.endsWith(".md")) continue;
+        const slug = name.replace(/\.md$/, "");
+        out.push({ slug, file: path.join(dir, name), category: entry.name });
+      }
+    }
+  }
+
+  return out;
+}
 
 // In the notebook repo, published Markdown lives beside the app. A standalone
 // deployment export places the same files in the app's local `content` folder.
@@ -22,11 +52,10 @@ function ensureDir() {
 /** 读取所有文章的元数据，按日期倒序 */
 export function getAllPosts(): PostMeta[] {
   ensureDir();
-  const files = fs.readdirSync(CONTENT_DIR).filter((f) => f.endsWith(".md"));
+  const found = discoverPosts();
 
-  const posts = files.map((file) => {
-    const slug = file.replace(/\.md$/, "");
-    const raw = fs.readFileSync(path.join(CONTENT_DIR, file), "utf8");
+  const posts = found.map(({ slug, file, category }) => {
+    const raw = fs.readFileSync(file, "utf8");
     const { data } = matter(raw);
     return {
       slug,
@@ -34,7 +63,7 @@ export function getAllPosts(): PostMeta[] {
       description: (data.description as string) ?? "",
       date: (data.date as string) ?? "1970-01-01",
       tags: (data.tags as string[]) ?? [],
-      category: data.category as string | undefined,
+      category,
       readingTime: data.readingTime as string | undefined,
     } satisfies PostMeta;
   });
@@ -93,10 +122,10 @@ function processHtml(html: string): { html: string; headings: Heading[] } {
 /** 读取单篇文章并渲染为 HTML */
 export async function getPost(slug: string): Promise<Post | null> {
   ensureDir();
-  const file = path.join(CONTENT_DIR, `${slug}.md`);
-  if (!fs.existsSync(file)) return null;
+  const found = discoverPosts().find((p) => p.slug === slug);
+  if (!found) return null;
 
-  const raw = fs.readFileSync(file, "utf8");
+  const raw = fs.readFileSync(found.file, "utf8");
   const { data, content } = matter(raw);
 
   const processed = await remark()
@@ -112,7 +141,7 @@ export async function getPost(slug: string): Promise<Post | null> {
     description: (data.description as string) ?? "",
     date: (data.date as string) ?? "1970-01-01",
     tags: (data.tags as string[]) ?? [],
-    category: data.category as string | undefined,
+    category: found.category,
     readingTime: data.readingTime as string | undefined,
     contentHtml: html,
     headings,
@@ -129,35 +158,6 @@ export function getAdjacentPosts(slug: string): {
   return {
     prev: i > 0 ? posts[i - 1] : null,
     next: i >= 0 && i < posts.length - 1 ? posts[i + 1] : null,
-  };
-}
-
-/** 聚合分类与标签为主题索引 */
-export function getTopics(): { categories: Topic[]; tags: Topic[] } {
-  const posts = getAllPosts();
-  const categories = new Map<string, Topic>();
-  const tags = new Map<string, Topic>();
-
-  const bump = (map: Map<string, Topic>, name: string, date: string) => {
-    const t = map.get(name);
-    if (t) {
-      t.count += 1;
-      if (date > t.latest) t.latest = date;
-    } else {
-      map.set(name, { name, count: 1, latest: date });
-    }
-  };
-
-  for (const p of posts) {
-    if (p.category) bump(categories, p.category, p.date);
-    for (const t of p.tags) bump(tags, t, p.date);
-  }
-
-  const byCount = (a: Topic, b: Topic) =>
-    b.count - a.count || (a.latest < b.latest ? 1 : -1);
-  return {
-    categories: [...categories.values()].sort(byCount),
-    tags: [...tags.values()].sort(byCount),
   };
 }
 

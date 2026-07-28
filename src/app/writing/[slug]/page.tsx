@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ArticleEnhance from "@/components/article/ArticleEnhance";
+import ArticleCoverFloat from "@/components/article/ArticleCoverFloat";
 import NavLink from "@/components/shell/NavLink";
 import ScrollDrift from "@/components/shell/ScrollDrift";
 import TopVeil from "@/components/shell/TopVeil";
 import CoverArt from "@/components/writing/CoverArt";
 import { formatDate } from "@/lib/format";
+import { categoryLabel } from "@/lib/categories";
 import { getAdjacentPosts, getAllPosts, getPost } from "@/lib/posts";
 
 export function generateStaticParams() {
@@ -42,7 +44,7 @@ export default async function ArticlePage({
       {/* 文章头 */}
       <header className="mx-auto max-w-[760px] px-6 pt-28 sm:pt-36">
         <p data-enter className="eyebrow">
-          {post.category ?? "Notes"} · {formatDate(post.date)}
+          {categoryLabel(post.category)} · {formatDate(post.date)}
         </p>
         <h1
           data-enter
@@ -70,23 +72,25 @@ export default async function ArticlePage({
         </div>
       </header>
 
-      {/* 头图 */}
+      {/* 头图：轻浮力，把「悬浮在水中」延续到详情页 */}
       <figure
         data-enter
         className="mx-auto mt-12 max-w-[880px] overflow-hidden rounded-[6px] px-0 sm:mx-6 lg:mx-auto"
       >
-        <CoverArt
-          slug={post.slug}
-          category={post.category}
-          className="block aspect-[2/1] w-full"
-        />
+        <ArticleCoverFloat>
+          <CoverArt
+            slug={post.slug}
+            category={post.category}
+            className="block aspect-[2/1] w-full"
+          />
+        </ArticleCoverFloat>
       </figure>
 
       {/* 正文 + TOC */}
       <div className="mx-auto mt-16 max-w-[1080px] px-6 sm:mt-20 xl:grid xl:grid-cols-[minmax(0,720px)_220px] xl:justify-center xl:gap-20">
         <article
           data-enter
-          className="prose-article min-w-0"
+          className="prose-article min-w-0 rounded-[10px] bg-paper-50/82 px-8 py-2 -mx-8 backdrop-blur-[3px]"
           dangerouslySetInnerHTML={{ __html: post.contentHtml }}
         />
 

@@ -23,6 +23,7 @@ uniform float uFogLift;
 uniform float uLiquify;
 uniform float uDrift;
 uniform float uSubmerge;
+uniform float uVignette;
 
 varying vec2 vUv;
 
@@ -195,7 +196,7 @@ void main() {
 
     /* 深处转冷、略微压暗 */
     float deep = smoothstep(0.7, -0.1, p.y) * uSubmerge;
-    col = mix(col, col * vec3(0.84, 0.9, 0.98) + vec3(0.012, 0.026, 0.04), deep * 0.85);
+    col = mix(col, col * vec3(0.82, 0.89, 0.99) + vec3(0.01, 0.028, 0.05), deep * 0.92);
 
     /* 上浮微粒（气泡） */
     vec2 bp = p * vec2(13.0, 9.0);
@@ -217,8 +218,13 @@ void main() {
   col = mix(col, vec3(0.965, 0.953, 0.925), lift);
   col = mix(col, vec3(0.957, 0.947, 0.918), uFogLift * smoothstep(0.62, 1.05, p.y) * 0.72);
 
-  float vig = smoothstep(1.3, 0.42, length((uv - 0.5) * asp * 1.12));
-  col *= mix(0.88, 1.0, vig);
+  /* vignette：uVignette=0 时与原行为等价（半径 1.3→0.42、边缘压到 0.88）；
+     下潜峰值 uVignette→1 时半径收窄到 0.62、边缘压到 0.55，模拟深水视野被压缩 */
+  float vigR = mix(1.30, 0.62, uVignette);
+  float vigA = mix(0.42, 0.20, uVignette);
+  float vigEdge = mix(0.88, 0.55, uVignette);
+  float vig = smoothstep(vigR, vigA, length((uv - 0.5) * asp * 1.12));
+  col *= mix(vigEdge, 1.0, vig);
 
   float g = hash21(vUv * uRes + fract(t) * 371.0);
   col += (g - 0.5) * 0.026;

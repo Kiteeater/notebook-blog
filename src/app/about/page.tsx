@@ -1,4 +1,5 @@
 import ScrollDrift from "@/components/shell/ScrollDrift";
+import AboutContact from "@/components/liquid/AboutContact";
 import TopVeil from "@/components/shell/TopVeil";
 
 export const metadata = {
@@ -40,44 +41,10 @@ export default function AboutPage() {
           </p>
         </div>
 
-        {/* 联系与订阅 */}
+        {/* 联系：New Business / General 胶囊切换，内容水下浮上 */}
         <section data-enter className="mt-20">
-          <h2 className="eyebrow mb-2">Elsewhere</h2>
-          <ul className="font-sans text-[15px]">
-            <li
-              className="flex items-baseline justify-between border-b py-4"
-              style={{ borderColor: "var(--hairline)" }}
-            >
-              <a
-                href="/rss.xml"
-                className="font-medium text-ink-950 transition-opacity hover:opacity-60"
-              >
-                RSS
-              </a>
-              <span className="text-[12px] text-ink-500">订阅本站</span>
-            </li>
-            <li
-              className="flex items-baseline justify-between border-b py-4"
-              style={{ borderColor: "var(--hairline)" }}
-            >
-              <span className="font-medium text-ink-950">GitHub</span>
-              <span className="text-[12px] text-ink-500">[待替换：GitHub 链接]</span>
-            </li>
-            <li
-              className="flex items-baseline justify-between border-b py-4"
-              style={{ borderColor: "var(--hairline)" }}
-            >
-              <span className="font-medium text-ink-950">X / Twitter</span>
-              <span className="text-[12px] text-ink-500">[待替换：X 链接]</span>
-            </li>
-            <li
-              className="flex items-baseline justify-between border-b py-4"
-              style={{ borderColor: "var(--hairline)" }}
-            >
-              <span className="font-medium text-ink-950">Email</span>
-              <span className="text-[12px] text-ink-500">[待替换：邮箱地址]</span>
-            </li>
-          </ul>
+          <h2 className="eyebrow mb-6">Elsewhere</h2>
+          <AboutContact />
         </section>
       </main>
     </div>

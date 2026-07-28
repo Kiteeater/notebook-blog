@@ -6,13 +6,8 @@ export const metadata = {
   description: "编程、AI、系统设计与个人思考的完整索引。",
 };
 
-export default async function WritingPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ topic?: string }>;
-}) {
+export default async function WritingPage() {
   const posts = getAllPosts();
-  const { topic } = await searchParams;
 
   const counts = new Map<string, number>();
   for (const p of posts) {
@@ -22,7 +17,5 @@ export default async function WritingPage({
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 
-  return (
-    <WritingIndex posts={posts} categories={categories} initialTopic={topic} />
-  );
+  return <WritingIndex posts={posts} categories={categories} />;
 }

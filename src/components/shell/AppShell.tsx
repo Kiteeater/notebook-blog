@@ -1,6 +1,7 @@
 "use client";
 
 import SceneCanvas from "@/components/scene/SceneCanvas";
+import LiquidField from "@/components/liquid/LiquidField";
 import GlobalHeader from "./GlobalHeader";
 import MenuOverlay from "./MenuOverlay";
 import TransitionProvider from "./TransitionProvider";
@@ -14,6 +15,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <TransitionProvider>
       <SceneCanvas />
+      <LiquidField />
       <GlobalHeader />
       <MenuOverlay />
       <div className="relative" style={{ zIndex: 10 }}>

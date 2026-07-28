@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useTransition } from "@/components/shell/TransitionProvider";
 import { sceneState } from "@/lib/sceneState";
+import { useLiquidPush } from "@/components/liquid/liquidControls";
 
 /**
  * Cinematic Home：单视口，只承担品牌表达与入口引导。
@@ -10,6 +11,7 @@ import { sceneState } from "@/lib/sceneState";
  */
 export default function Hero({ postCount }: { postCount: number }) {
   const { navigate, prefetch } = useTransition();
+  const pillRef = useLiquidPush<HTMLButtonElement>();
 
   useEffect(() => {
     if (sceneState.reduced) return;
@@ -51,6 +53,7 @@ export default function Hero({ postCount }: { postCount: number }) {
       <div data-enter data-exit-first className="mt-12">
         <button
           type="button"
+          ref={pillRef}
           onClick={() => navigate("/writing")}
           onPointerEnter={() => prefetch("/writing")}
           className="pill bg-paper-50/60 text-ink-950 backdrop-blur-[2px]"

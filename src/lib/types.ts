@@ -18,9 +18,3 @@ export type Post = PostMeta & {
   contentHtml: string;
   headings: Heading[];
 };
-
-export type Topic = {
-  name: string;
-  count: number;
-  latest: string; // ISO date of newest post in topic
-};

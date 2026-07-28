@@ -7,8 +7,7 @@ import { useTransition } from "./TransitionProvider";
 const ITEMS = [
   { href: "/", label: "Index", num: "01" },
   { href: "/writing", label: "Writing", num: "02" },
-  { href: "/topics", label: "Topics", num: "03" },
-  { href: "/about", label: "About", num: "04" },
+  { href: "/about", label: "About", num: "03" },
 ] as const;
 
 /** 全屏菜单：大字号编号列表，hover 切换为衬线斜体 */

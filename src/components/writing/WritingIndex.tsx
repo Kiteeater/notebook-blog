@@ -3,13 +3,46 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Lenis from "lenis";
 import PostCard from "./PostCard";
+import BuoyantField from "./BuoyantField";
+import CardSceneCanvas from "./CardSceneCanvas";
+import CardTextLayer from "./CardTextLayer";
+import type { CardRect } from "./cardScene";
 import { sceneState } from "@/lib/sceneState";
+import { categoryLabel } from "@/lib/categories";
+import { useLiquidPush } from "@/components/liquid/liquidControls";
 import type { PostMeta } from "@/lib/types";
+
+/** 单个筛选 pill：button 本体挂液体推流，内层文字随鼠标方向轻位移。 */
+function FilterPill({
+  label,
+  count,
+  active,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  const ref = useLiquidPush<HTMLButtonElement>();
+  return (
+    <button
+      ref={ref}
+      type="button"
+      className="pill-filter bg-paper-50/55"
+      data-active={active}
+      onClick={onClick}
+      aria-pressed={active}
+    >
+      {label}
+      <span className="count">{count}</span>
+    </button>
+  );
+}
 
 type Props = {
   posts: PostMeta[];
   categories: { name: string; count: number }[];
-  initialTopic?: string;
 };
 
 const ALL = "All";
@@ -20,15 +53,8 @@ const ALL = "All";
  * 经过标题区域时产生克制的弧形压缩（透镜形变），离开后恢复。
  * 移动端 / reduced-motion：正常文档滚动，无形变。
  */
-export default function WritingIndex({ posts, categories, initialTopic }: Props) {
-  const validInitial =
-    initialTopic &&
-    (categories.some((c) => c.name === initialTopic) ||
-      posts.some((p) => p.tags.includes(initialTopic)))
-      ? initialTopic
-      : ALL;
-
-  const [filter, setFilter] = useState<string>(validInitial);
+export default function WritingIndex({ posts, categories }: Props) {
+  const [filter, setFilter] = useState<string>(ALL);
   /** 虚拟滚动是否激活（桌面 + 非 reduced-motion 时由 Lenis effect 开启） */
   const [vs, setVs] = useState(false);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -36,6 +62,9 @@ export default function WritingIndex({ posts, categories, initialTopic }: Props)
   const headerRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const lenisRef = useRef<Lenis | null>(null);
+  // WebGL 卡片层共享状态（桌面 vs=true 时启用）：rects 由场景写入，hover 由命中层写入
+  const rectsRef = useRef<CardRect[] | null>(null);
+  const hoverRef = useRef<number>(-1);
 
   const pills = useMemo(() => {
     const names = [ALL, ...categories.map((c) => c.name)];
@@ -44,14 +73,10 @@ export default function WritingIndex({ posts, categories, initialTopic }: Props)
   }, [categories, filter]);
 
   const countOf = (name: string) =>
-    name === ALL
-      ? posts.length
-      : posts.filter((p) => p.category === name || p.tags.includes(name)).length;
+    name === ALL ? posts.length : posts.filter((p) => p.category === name).length;
 
   const filtered =
-    filter === ALL
-      ? posts
-      : posts.filter((p) => p.category === filter || p.tags.includes(filter));
+    filter === ALL ? posts : posts.filter((p) => p.category === filter);
 
   const desktop = () =>
     window.matchMedia("(min-width: 768px)").matches && !sceneState.reduced;
@@ -75,6 +100,8 @@ export default function WritingIndex({ posts, categories, initialTopic }: Props)
     lenis.on("scroll", () => {
       const limit = Math.max(1, lenis.limit);
       sceneState.scrollTarget = (lenis.scroll / limit) * 0.14 - 0.07;
+      // 喂滚动速度给 BuoyantField 做卡片仰俯惯性（direction 带符号，归一到 ~-1..1）
+      sceneState.scrollVelTarget = lenis.direction * Math.min(Math.abs(lenis.velocity) / 12, 1);
     });
 
     let raf = 0;
@@ -112,6 +139,7 @@ export default function WritingIndex({ posts, categories, initialTopic }: Props)
       lenis.destroy();
       lenisRef.current = null;
       sceneState.scrollTarget = 0;
+      sceneState.scrollVelTarget = 0;
       setVs(false);
     };
   }, []);
@@ -127,34 +155,7 @@ export default function WritingIndex({ posts, categories, initialTopic }: Props)
     }
   }, [filter]);
 
-  // 桌面端：透镜形变 —— 网格项接近固定标题区域时的弧形压缩
-  useEffect(() => {
-    if (!desktop()) return;
-    let raf = 0;
-    const tick = () => {
-      raf = requestAnimationFrame(tick);
-      const grid = gridRef.current;
-      if (!grid) return;
-      const zone = (headerRef.current?.getBoundingClientRect().bottom ?? 240) + 8;
-      const range = 210;
-      const items = grid.querySelectorAll<HTMLElement>(".post-item");
-      for (const el of items) {
-        const rect = el.getBoundingClientRect();
-        const start = zone + range;
-        // 越过雾线后保持形变（滑入标题下方的雾中），不重置
-        let k = Math.min(1, Math.max(0, (start - rect.top) / range));
-        k = k * k * (3 - 2 * k);
-        if (k > 0.012) {
-          el.style.transformOrigin = "top center";
-          el.style.transform = `translateY(${(-17 * k).toFixed(2)}px) scaleY(${(1 - 0.09 * k).toFixed(4)}) rotateX(${(4.6 * k).toFixed(2)}deg)`;
-        } else {
-          if (el.style.transform) el.style.transform = "";
-        }
-      }
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, []);
+  // 标题区弧形压缩已并入 BuoyantField（写入内层 .buoyant），此处不再单独 tick。
 
   return (
     <div
@@ -190,20 +191,16 @@ export default function WritingIndex({ posts, categories, initialTopic }: Props)
           data-enter
           className="pointer-events-auto mt-6 flex flex-wrap items-center justify-center gap-2"
           role="group"
-          aria-label="按主题筛选"
+          aria-label="按分类筛选"
         >
           {pills.map((name) => (
-            <button
+            <FilterPill
               key={name}
-              type="button"
-              className="pill-filter bg-paper-50/55"
-              data-active={filter === name}
+              label={name === ALL ? ALL : categoryLabel(name)}
+              count={countOf(name)}
+              active={filter === name}
               onClick={() => setFilter(name)}
-              aria-pressed={filter === name}
-            >
-              {name}
-              <span className="count">{countOf(name)}</span>
-            </button>
+            />
           ))}
         </div>
       </div>
@@ -221,17 +218,57 @@ export default function WritingIndex({ posts, categories, initialTopic }: Props)
         >
           {filtered.length === 0 ? (
             <p className="py-24 text-center font-sans text-sm text-ink-500">
-              该主题下暂无文章。
+              该分类下暂无文章。
             </p>
+          ) : vs ? (
+            // 桌面 WebGL 模式：
+            // - contentRef 内放不可见占位撑出 Lenis 滚动高度（WebGL 内部按 scroll 布局）
+            // - CardSceneCanvas / CardTextLayer 挂在 viewportRef 下 absolute 铺满视口
+            <>
+              <div
+                aria-hidden="true"
+                style={{ height: `${Math.ceil(filtered.length / 2) * 520 + 400}px` }}
+              />
+              {/* WebGL 套件用 portal 般的 absolute 定位，挂在 viewportRef 下 */}
+              {/* WebGL 套件：canvas + 文字层共享同一 mask，卡片飞入标题区时
+                  线性淡出（顶部 ~24% 渐变到透明），不再硬穿「Selected Writing」。 */}
+              <div
+                className="pointer-events-none absolute inset-0"
+                style={{
+                  WebkitMaskImage:
+                    "linear-gradient(180deg, transparent 0%, #000 24%, #000 100%)",
+                  maskImage:
+                    "linear-gradient(180deg, transparent 0%, #000 24%, #000 100%)",
+                }}
+              >
+                <CardSceneCanvas
+                  posts={filtered}
+                  containerRef={gridRef}
+                  rectsRef={rectsRef}
+                  hoverRef={hoverRef}
+                />
+                <CardTextLayer
+                  posts={filtered}
+                  rectsRef={rectsRef}
+                  hoverRef={hoverRef}
+                />
+              </div>
+            </>
           ) : (
             <div
               ref={gridRef}
               className="writing-grid grid grid-cols-1 gap-x-10 gap-y-14 md:grid-cols-2 md:gap-y-20"
               style={{ perspective: "1400px" }}
             >
-              {filtered.map((post) => (
-                <PostCard key={post.slug} post={post} />
-              ))}
+              <BuoyantField
+                containerRef={gridRef}
+                headerRef={headerRef}
+                mode="archive"
+              >
+                {filtered.map((post) => (
+                  <PostCard key={post.slug} post={post} />
+                ))}
+              </BuoyantField>
             </div>
           )}
         </div>

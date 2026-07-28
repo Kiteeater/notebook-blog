@@ -126,16 +126,68 @@
   transition:
     transform 0.9s var(--ease-observatory),
     filter 0.9s var(--ease-observatory);
+  /* 远景 DOF：BuoyantField 在 .buoyant 上写 --dof，这里消费；
+     hover 时被聚焦 → 拉回锐利（下方规则覆盖为 blur(0)） */
+  filter: blur(var(--dof, 0px));
+}
+/* CoverArt 现渲染为 div > svg，让 svg 撑满外层容器（aspect-ratio 由外层给） */
+.cover-media > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 .post-item:hover .cover-media {
   transform: scale(1.035);
-  filter: saturate(1.08) contrast(1.03);
+  filter: saturate(1.08) contrast(1.03) blur(0px);
 }
 .post-item .post-title {
   transition: transform 0.6s var(--ease-observatory);
 }
 .post-item:hover .post-title {
   transform: translateX(6px);
+}
+
+/* ---------- 浮力场：内层 .buoyant 由 BuoyantField 单 rAF 驱动 transform ---------- */
+.buoyant {
+  will-change: transform;
+  transform-origin: top center;
+  transform-style: preserve-3d; /* 让 translateZ 读取 grid 的 perspective */
+}
+
+/* ---------- WebGL 卡片网格：命中层（透明 <a> 盖住弯曲 mesh） ---------- */
+.card-hit {
+  pointer-events: auto;
+  cursor: pointer;
+  background: transparent;
+}
+
+/* 水中焦散光斑：缓慢游动的高光，强化「悬浮在水中」的材质感 */
+.caustic-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0.45;
+  background:
+    radial-gradient(45% 30% at 28% 22%, rgba(255, 251, 240, 0.9), transparent 70%),
+    radial-gradient(38% 26% at 72% 64%, rgba(206, 224, 233, 0.7), transparent 72%);
+  background-size: 160% 130%, 150% 120%;
+  background-repeat: no-repeat;
+  animation: caustic-drift 18s var(--ease-observatory) infinite alternate;
+}
+@keyframes caustic-drift {
+  0% {
+    background-position: 18% 12%, 78% 70%;
+    transform: translate3d(0, 0, 0) scale(1.04);
+  }
+  50% {
+    background-position: 52% 40%, 44% 38%;
+    transform: translate3d(1.5%, -1%, 0) scale(1.08);
+  }
+  100% {
+    background-position: 30% 58%, 62% 30%;
+    transform: translate3d(-1.2%, 1.4%, 0) scale(1.05);
+  }
 }
 
 /* ---------- 文章正文排版 ---------- */
@@ -267,6 +319,77 @@
   pointer-events: none !important;
 }
 
+/* ---------- 液体折射封面（PostCard 外层挂 filter；reduced/webgl-off 时不挂） ---------- */
+/* .liquid-tick：LiquidField 为触发 filter 重算而 toggle 的钩子，
+   空规则即可（仅强制重光栅）。 */
+.liquid-tick {
+  /* intentionally empty: 重排触发器 */
+}
+/* 折射 filter 容器：url(#liquid-cover) 的 defs 由 LiquidField 提供。
+   reduced-motion 时媒体查询覆盖为无 filter（见文件末尾）。 */
+.liquid-cover {
+  filter: url(#liquid-cover);
+}
+
+/* ---------- 文字推流受感体（attachLiquidPush 写 GSAP transform） ---------- */
+/* 这层 div 把 GSAP 写的 x/y/skewX 隔离到独立合成层，
+   不污染外层元素的入场/浮力 transform。内层 .nav-swap 仍负责 masked slide。 */
+.liquid-text {
+  display: inline-block;
+  will-change: transform;
+}
+
+/* ---------- Segmented Control（unseen.co 式胶囊切换） ---------- */
+.segmented {
+  background: rgba(23, 21, 18, 0.04);
+  border: 1px solid var(--hairline);
+}
+.segmented-thumb {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  border-radius: 9999px;
+  background: theme("colors.paper.50");
+  box-shadow: 0 1px 2px rgba(23, 21, 18, 0.08);
+  transition:
+    transform 0.55s var(--ease-observatory),
+    width 0.55s var(--ease-observatory);
+  z-index: 1;
+}
+.segmented-tab {
+  padding: 0.5rem 1.25rem;
+  color: theme("colors.ink.700");
+  cursor: pointer;
+}
+.segmented-tab[data-active="true"] {
+  color: theme("colors.ink.950");
+}
+/* 非 active 的 tab hover 时字色加深（克制） */
+.segmented-tab:not([data-active="true"]):hover {
+  color: theme("colors.ink.900");
+}
+
+/* ---------- Segmented 内容切换：水下浮上 crossfade ---------- */
+@keyframes liquid-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(3px);
+  }
+  60% {
+    filter: blur(0.5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+.segmented-pane {
+  animation: liquid-rise-in 0.62s var(--ease-observatory) both;
+}
+
 /* ---------- reduced-motion：关闭一切动态 ---------- */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -279,5 +402,9 @@
   }
   [data-enter] {
     animation: none;
+  }
+  /* 关闭液体折射（defs 也不渲染），封面保持静态 */
+  .liquid-cover {
+    filter: none;
   }
 }

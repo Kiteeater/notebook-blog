@@ -11,7 +11,7 @@ import {
 import { usePathname, useRouter } from "next/navigation";
 import gsap from "gsap";
 import { CustomEase } from "gsap/CustomEase";
-import { SCENE_PRESETS, modeForPath, sceneState } from "@/lib/sceneState";
+import { SCENE_PRESETS, DIVE_PEAK, modeForPath, sceneState } from "@/lib/sceneState";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(CustomEase);
@@ -129,7 +129,12 @@ export default function TransitionProvider({
         ease: EASE,
         stagger: staggered ? 0.08 : 0.04,
         delay: staggered ? 0.12 : 0,
-        onComplete: unlock,
+        onComplete: () => {
+          // 清掉入场残留在 [data-enter]（如 .post-item）上的 transform，
+          // 让透视与浮力（作用于内层 .buoyant）干净生效；不动 autoAlpha 的 opacity/visibility
+          gsap.set(els, { clearProps: "transform" });
+          unlock();
+        },
       });
     },
     [unlock],
@@ -250,20 +255,23 @@ export default function TransitionProvider({
         0.05,
       );
       // 4. 波纹增强：随下潜同步加剧，水在加速段被搅起
-      tl.to(sceneState, { liquify: 1.15, duration: 0.7, ease: "dive" }, 0.08);
+      tl.to(sceneState, { liquify: DIVE_PEAK.liquify, duration: 0.7, ease: "dive" }, 0.08);
       // 5. 没入：水面光在切页瞬间达到峰值，恰好遮住切换；submerge 期间
-      //    光柱与气泡持续游动，即使新路由尚未就绪也不会僵住
-      tl.to(sceneState, { submerge: 1, duration: 0.5, ease: "sine.in" }, 0.12);
+      //    光柱与气泡持续游动，即使新路由尚未就绪也不会僵住。
+      //    与旧逻辑相反——真实下潜是「变暗变冷变窄」而非「变亮变白」：
+      //    暗曝光 + 重雾 + 视野收窄，配合 shader 冷调与暗角模拟深水压迫感。
       tl.to(
         sceneState,
         {
-          exposure: Math.max(preset.exposure, sceneState.exposure + 0.3),
-          contrast: Math.min(preset.contrast, 0.74),
-          fogLift: Math.max(preset.fogLift, 0.55),
+          submerge: DIVE_PEAK.submerge,
+          exposure: DIVE_PEAK.exposure,
+          contrast: DIVE_PEAK.contrast,
+          fogLift: DIVE_PEAK.fogLift,
+          vignette: DIVE_PEAK.vignette,
           duration: 0.6,
           ease: "sine.in",
         },
-        0.14,
+        0.12,
       );
       // 6. 峰值处切换路由（旧页面已完全淡出，新页面在水光中进入）
       tl.add(() => router.push(href), DIVE_CUT);

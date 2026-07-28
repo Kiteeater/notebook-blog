@@ -44,6 +44,7 @@ export default function SceneCanvas() {
       uLiquify: { value: sceneState.liquify },
       uDrift: { value: sceneState.drift },
       uSubmerge: { value: sceneState.submerge },
+      uVignette: { value: sceneState.vignette },
     };
     const material = new THREE.ShaderMaterial({
       vertexShader,
@@ -74,6 +75,9 @@ export default function SceneCanvas() {
     window.addEventListener("pointermove", onPointer, { passive: true });
 
     const clock = new THREE.Clock();
+    // 上一帧的鼠标/滚动值，用于差分出速度向量
+    let lastMx = 0;
+    let lastMy = 0;
     renderer.setAnimationLoop(() => {
       if (document.hidden) return;
       const dt = Math.min(clock.getDelta(), 0.05);
@@ -91,6 +95,24 @@ export default function SceneCanvas() {
         k *
         0.25;
 
+      // 速度向量：鼠标/滚动的瞬时差分 + 低通衰减，停手归零。
+      // 统一在渲染循环算一次，避免 BuoyantField 等多处重复差分。
+      if (!sceneState.reduced) {
+        const kv = 1 - Math.pow(0.001, dt) * 0.18; // ≈0.82/帧 的衰减
+        sceneState.mouseVX = sceneState.mouseVX * kv + (sceneState.mouseX - lastMx) * (1 - kv);
+        sceneState.mouseVY = sceneState.mouseVY * kv + (sceneState.mouseY - lastMy) * (1 - kv);
+        lastMx = sceneState.mouseX;
+        lastMy = sceneState.mouseY;
+        // scrollVel 向 target 缓动，target 每帧衰减归零（滚动停 → 速度归零）
+        sceneState.scrollVel += (sceneState.scrollVelTarget - sceneState.scrollVel) * k * 0.3;
+        sceneState.scrollVelTarget *= Math.pow(0.001, dt) * 0.12 + (1 - 0.12); // ≈0.88/帧
+      } else {
+        sceneState.mouseVX = 0;
+        sceneState.mouseVY = 0;
+        sceneState.scrollVel = 0;
+        sceneState.scrollVelTarget = 0;
+      }
+
       uniforms.uTime.value = sceneState.time;
       uniforms.uMouse.value.set(
         sceneState.reduced ? 0 : sceneState.mouseX,
@@ -103,6 +125,7 @@ export default function SceneCanvas() {
       uniforms.uLiquify.value = sceneState.liquify;
       uniforms.uDrift.value = sceneState.reduced ? 0 : sceneState.drift;
       uniforms.uSubmerge.value = sceneState.reduced ? 0 : sceneState.submerge;
+      uniforms.uVignette.value = sceneState.reduced ? 0 : sceneState.vignette;
 
       renderer.render(scene, camera);
     });
