@@ -29,6 +29,8 @@ type Props = {
   rectsRef: React.RefObject<CardRect[] | null>;
   /** hover index 回写 ref：hit layer 写入，场景每帧读取驱动 uCurl */
   hoverRef: React.RefObject<number>;
+  /** WebGL / 纹理初始化失败时回调，父级应退回 DOM 卡片网格 */
+  onFail?: () => void;
 };
 
 /** 把 CoverArt SVG 字符串转成 CanvasTexture（异步，等待 image load）。
@@ -78,9 +80,12 @@ export default function CardSceneCanvas({
   containerRef,
   rectsRef,
   hoverRef,
+  onFail,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [failed, setFailed] = useState(false);
+  const onFailRef = useRef(onFail);
+  onFailRef.current = onFail;
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -96,11 +101,16 @@ export default function CardSceneCanvas({
           textures.forEach((t) => t.dispose());
           return;
         }
-        scene = createCardScene(
-          canvasRef.current,
-          posts.map((p) => p.slug),
-          textures,
-        );
+        try {
+          scene = createCardScene(
+            canvasRef.current,
+            posts.map((p) => p.slug),
+            textures,
+          );
+        } catch (err) {
+          textures.forEach((t) => t.dispose());
+          throw err;
+        }
         // 2. rAF 循环：推进 + 写 rects + 读 hover
         const loop = () => {
           raf = requestAnimationFrame(loop);
@@ -115,7 +125,10 @@ export default function CardSceneCanvas({
       })
       .catch((err) => {
         console.error("[CardSceneCanvas] texture/scene init failed:", err);
-        setFailed(true);
+        if (!disposed) {
+          setFailed(true);
+          onFailRef.current?.();
+        }
       });
 
     return () => {

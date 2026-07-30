@@ -24,6 +24,8 @@ uniform float uLiquify;
 uniform float uDrift;
 uniform float uSubmerge;
 uniform float uVignette;
+uniform float uWarmth;
+uniform float uTouch;
 
 varying vec2 vUv;
 
@@ -145,6 +147,20 @@ void main() {
   p.x += uMouse.x * water * 0.028 * surface;
   p.y += uMouse.y * water * 0.017 * surface + uScroll * water * 0.08;
 
+  /* 局部触碰折射：鼠标附近像隔着水被手指碰了一下（LiquidField 驱动 uTouch）
+     与全局 liquify 解耦，干燥页（article）也能有克制的局部水感 */
+  if (uTouch > 0.001) {
+    vec2 muv = vec2(uMouse.x * 0.5 + 0.5, 1.0 - (uMouse.y * 0.5 + 0.5));
+    vec2 d = (uv - muv) * asp;
+    float fall = exp(-dot(d, d) * 14.0) * uTouch;
+    float swirl = fbm(uv * 6.0 + t * 0.35) - 0.5;
+    p.x += (d.x * 0.55 + swirl * 0.35) * fall * 0.055;
+    p.y += (d.y * 0.45 + swirl * 0.28) * fall * 0.045;
+    /* 速度拖尾：顺流轻微拉长 */
+    p.x += uMouse.x * fall * 0.012;
+    p.y += uMouse.y * fall * 0.008;
+  }
+
   float floorY = 0.34;
   vec3 col;
   if (p.y < floorY) {
@@ -207,6 +223,47 @@ void main() {
     bf.x += sin(t * 0.6 + bh * 21.0) * 0.22;
     float bm = smoothstep(0.06, 0.0, length(bf)) * step(0.9, bh);
     col += vec3(1.0, 0.99, 0.95) * bm * (0.5 + 0.5 * sin(t * 0.9 + bh * 35.0)) * uSubmerge * 0.14;
+  }
+
+  /* ---- 干燥阳光（article 上岸）：暖顶光、斜向光柱、金尘 —— 无折射、无气泡 ---- */
+  if (uWarmth > 0.001) {
+    float w = uWarmth;
+    /* 整帧暖调：纸本米黄，替代水下冷青 */
+    col = mix(col, col * vec3(1.04, 1.01, 0.96) + vec3(0.018, 0.012, 0.0), w * 0.55);
+
+    /* 左上暖日：固定方位，缓慢呼吸（不是渐变罩，是体积光衰减） */
+    vec2 sun = vec2(-0.38 + uMouse.x * 0.04, 0.92 + uMouse.y * 0.02);
+    float sunDist = length(p - sun);
+    col += vec3(1.0, 0.94, 0.82) * exp(-2.4 * sunDist) * w * 0.22;
+    col += vec3(0.98, 0.9, 0.72) * exp(-8.0 * sunDist) * w * 0.08;
+
+    /* 斜向光柱：从日源沿对角线落下，fbm 做边缘软抖（空气热浪，非水面折射） */
+    vec2 rp = p - sun;
+    float along = rp.x * 0.55 + rp.y * 0.84; /* 朝右下 */
+    float across = rp.x * 0.84 - rp.y * 0.55;
+    float heat = fbm(vec2(across * 2.2, along * 0.7 - t * 0.04)) * 0.35;
+    float beam =
+      exp(-abs(across + heat * 0.12) * 9.0) *
+      smoothstep(-0.15, 0.55, along) *
+      (0.55 + 0.45 * sin(along * 5.0 + t * 0.09 + heat * 1.7));
+    float beam2 =
+      exp(-abs(across - 0.18 + heat * 0.08) * 14.0) *
+      smoothstep(0.0, 0.7, along) * 0.55;
+    col += vec3(1.0, 0.96, 0.86) * (beam + beam2) * w * 0.07;
+
+    /* 金尘：比水下尘埃更暖、更稀、下落更慢 —— 干空气里的颗粒 */
+    vec2 gp = p * vec2(11.0, 8.5);
+    gp.y -= t * 0.018;
+    vec2 gc = floor(gp);
+    vec2 gf = fract(gp) - 0.5;
+    float gh = hash21(gc + 19.0);
+    gf.x += sin(t * 0.22 + gh * 14.0) * 0.28;
+    float gm = smoothstep(0.045, 0.0, length(gf)) * step(0.88, gh);
+    col += vec3(1.0, 0.95, 0.82) * gm * (0.45 + 0.55 * sin(t * 0.5 + gh * 28.0)) * w * 0.11;
+
+    /* 底部略收暗：落地阴影，给纸面阅读区留对比，不做暗角压迫 */
+    float ground = smoothstep(0.55, 0.0, p.y);
+    col *= 1.0 - ground * w * 0.06;
   }
 
   /* ---- 后期 ---- */

@@ -190,6 +190,29 @@
   }
 }
 
+/* ---------- 文章页：干燥阳光纸面（上岸后，无液体/毛玻璃水感） ---------- */
+.article-sheet {
+  /* 暖白半透明：透出背景阳光体，不用 backdrop-blur（那是水下折射残留） */
+  background: rgba(246, 243, 236, 0.88);
+  box-shadow:
+    0 1px 0 rgba(255, 252, 245, 0.7) inset,
+    0 18px 48px -28px rgba(55, 42, 22, 0.14),
+    0 2px 8px -4px rgba(55, 42, 22, 0.06);
+}
+.article-cover-frame {
+  /* 封面落地阴影：斜阳投影，克制、单方向，拒绝彩虹渐变 */
+  filter: drop-shadow(0 22px 28px rgba(55, 42, 22, 0.12))
+    drop-shadow(0 4px 8px rgba(55, 42, 22, 0.06));
+}
+.article-cover-face {
+  transform-origin: 50% 40%;
+  border-radius: 6px;
+  /* 纸边高光：模拟受光面，非渐变罩 */
+  box-shadow:
+    0 0 0 1px rgba(23, 21, 18, 0.06),
+    inset 0 1px 0 rgba(255, 252, 245, 0.35);
+}
+
 /* ---------- 文章正文排版 ---------- */
 .prose-article {
   @apply font-serif text-[18px] leading-[1.8] text-ink-800;
@@ -331,8 +354,8 @@
   filter: url(#liquid-cover);
 }
 
-/* ---------- 文字推流受感体（attachLiquidPush 写 GSAP transform） ---------- */
-/* 这层 div 把 GSAP 写的 x/y/skewX 隔离到独立合成层，
+/* ---------- 文字推流受感体（attachLiquidPush 写 transform） ---------- */
+/* 这层 div 把推流写的 x/y/skewX 隔离到独立合成层，
    不污染外层元素的入场/浮力 transform。内层 .nav-swap 仍负责 masked slide。 */
 .liquid-text {
   display: inline-block;

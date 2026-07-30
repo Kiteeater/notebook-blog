@@ -218,15 +218,16 @@ export function createCardScene(
     const vh = canvas.clientHeight || window.innerHeight;
     const aspect = vw / vh;
 
-    // 虚拟滚动：把 sceneState.scroll（静置 ≈ -0.07）归一成 0..1 进度，
-    // 再按总行数放大成世界 Y 偏移——保证任意文章数都能完整滚到底。
-    // scroll 在 WritingIndex 里映射自 lenis: (scroll/limit)*0.14 - 0.07，
-    // 静置 -0.07、滚到底 +0.07，归一进度 = (scroll + 0.07) / 0.14。
+    // 虚拟滚动：用 scrollTarget（Lenis 即时目标）而非低通后的 scroll，
+    // 避免 SceneCanvas 的 0.25 缓动让卡片明显「拖一拍」。
+    // 映射：WritingIndex (scroll/limit)*0.14 - 0.07 → 静置 -0.07、到底 +0.07。
     const rows = Math.ceil(n / COLS);
-    const progress = Math.min(1, Math.max(0, (sceneState.scroll + 0.07) / 0.14));
-    // 滚到底时末行中心要从 HOME_Y 滑到 HOME_Y（与首行静置同高），中间所有行
-    // 整体上移 (rows-1)*ROW_H。+0.1 余量让末行不至于贴底雾。
-    const scrollWorld = progress * ((rows - 1) * ROW_H + 0.1);
+    const progress = Math.min(
+      1,
+      Math.max(0, (sceneState.scrollTarget + 0.07) / 0.14),
+    );
+    // 滚到底时末行中心回到 HOME_Y 附近；+0.06 余量避免贴底雾。
+    const scrollWorld = progress * ((rows - 1) * ROW_H + 0.06);
 
     const mx = sceneState.mouseX;
     const my = sceneState.mouseY;

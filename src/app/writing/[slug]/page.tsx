@@ -39,9 +39,9 @@ export default async function ArticlePage({
     <div data-page="article" className="relative">
       <ScrollDrift />
       <ArticleEnhance />
-      <TopVeil />
+      <TopVeil tone="sun" />
 
-      {/* 文章头 */}
+      {/* 文章头：上岸后的编辑式开场，无液体语义 */}
       <header className="mx-auto max-w-[760px] px-6 pt-28 sm:pt-36">
         <p data-enter className="eyebrow">
           {categoryLabel(post.category)} · {formatDate(post.date)}
@@ -72,31 +72,38 @@ export default async function ArticlePage({
         </div>
       </header>
 
-      {/* 头图：轻浮力，把「悬浮在水中」延续到详情页 */}
+      {/* 头图：阳光纸面 3D 倾斜（干燥，非水中浮力） */}
       <figure
         data-enter
-        className="mx-auto mt-12 max-w-[880px] overflow-hidden rounded-[6px] px-0 sm:mx-6 lg:mx-auto"
+        className="article-cover-frame mx-auto mt-12 w-full max-w-[760px] px-6"
       >
         <ArticleCoverFloat>
           <CoverArt
             slug={post.slug}
             category={post.category}
-            className="block aspect-[2/1] w-full"
+            className="block aspect-[2/1] w-full overflow-hidden rounded-[6px]"
           />
         </ArticleCoverFloat>
       </figure>
 
-      {/* 正文 + TOC */}
-      <div className="mx-auto mt-16 max-w-[1080px] px-6 sm:mt-20 xl:grid xl:grid-cols-[minmax(0,720px)_220px] xl:justify-center xl:gap-20">
+      {/*
+        正文严格居中；目录绝对定位到阅读栏右侧，
+        避免 xl 双栏 grid 把正文整体往左顶偏。
+        纸面：暖白半透明 + 极轻暖阴影，透出背景阳光，无毛玻璃水感。
+      */}
+      <div className="relative mx-auto mt-16 w-full max-w-[760px] px-6 sm:mt-20">
         <article
           data-enter
-          className="prose-article min-w-0 rounded-[10px] bg-paper-50/82 px-8 py-2 -mx-8 backdrop-blur-[3px]"
+          className="prose-article article-sheet min-w-0 rounded-[10px] px-5 py-2 sm:px-8 sm:-mx-2"
           dangerouslySetInnerHTML={{ __html: post.contentHtml }}
         />
 
         {post.headings.length > 1 && (
-          <aside className="hidden xl:block">
-            <nav aria-label="目录" className="sticky top-32">
+          <aside className="pointer-events-none absolute left-full top-0 bottom-0 hidden w-[200px] pl-12 xl:block">
+            <nav
+              aria-label="目录"
+              className="pointer-events-auto sticky top-32 max-h-[calc(100dvh-10rem)] overflow-y-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
               <p className="eyebrow mb-4">目录</p>
               {post.headings.map((h) => (
                 <a
@@ -118,7 +125,7 @@ export default async function ArticlePage({
       {/* 上一篇 / 下一篇：编辑式导航 */}
       <nav
         aria-label="文章导航"
-        className="mx-auto mt-24 grid max-w-[720px] grid-cols-1 gap-px px-6 pb-28 sm:grid-cols-2"
+        className="mx-auto mt-24 grid max-w-[760px] grid-cols-1 gap-px px-6 pb-28 sm:grid-cols-2"
       >
         <div
           className="border-t pt-6 sm:pr-8"

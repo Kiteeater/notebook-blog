@@ -45,6 +45,8 @@ export default function SceneCanvas() {
       uDrift: { value: sceneState.drift },
       uSubmerge: { value: sceneState.submerge },
       uVignette: { value: sceneState.vignette },
+      uWarmth: { value: sceneState.warmth },
+      uTouch: { value: sceneState.touch },
     };
     const material = new THREE.ShaderMaterial({
       vertexShader,
@@ -126,6 +128,8 @@ export default function SceneCanvas() {
       uniforms.uDrift.value = sceneState.reduced ? 0 : sceneState.drift;
       uniforms.uSubmerge.value = sceneState.reduced ? 0 : sceneState.submerge;
       uniforms.uVignette.value = sceneState.reduced ? 0 : sceneState.vignette;
+      uniforms.uWarmth.value = sceneState.reduced ? 0 : sceneState.warmth;
+      uniforms.uTouch.value = sceneState.reduced ? 0 : sceneState.touch;
 
       renderer.render(scene, camera);
     });

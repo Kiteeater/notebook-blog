@@ -15,6 +15,11 @@ export type SceneUniformValues = {
   submerge: number;
   /** 视野收窄（0=常态、1=最强暗角）：下潜峰值时半径收缩，模拟深水视野被压缩 */
   vignette: number;
+  /**
+   * 干燥阳光感（0=无、1=最强）。
+   * article 页主驱动：暖色顶光、斜向光柱、金尘；与 submerge 互斥使用。
+   */
+  warmth: number;
   /** 镜头垂直漂移的静置目标（负值 = 世界抬升 = 镜头下沉） */
   scrollTarget: number;
 };
@@ -38,6 +43,13 @@ export const sceneState = {
   // 首页滚轮只推动镜头，不滚动文档
   wheelImpulse: 0,
 
+  /**
+   * 局部液体触碰强度（0..1）。
+   * LiquidField 在鼠标经过 [data-liquid] 目标时写入；
+   * SceneCanvas 读入 shader 做背景局部折射（与 GSAP 管线的 liquify 解耦）。
+   */
+  touch: 0,
+
   exposure: 1.0,
   contrast: 1.0,
   fogLift: 0.12,
@@ -45,22 +57,62 @@ export const sceneState = {
   drift: 1.0,
   submerge: 0.0,
   vignette: 0.0,
+  warmth: 0.0,
 
   reduced: false,
   webgl: true,
 };
 
 export const SCENE_PRESETS: Record<SceneMode, SceneUniformValues> = {
-  home: { exposure: 1.0, contrast: 1.0, fogLift: 0.12, liquify: 0.0, drift: 1.0, submerge: 0, vignette: 0, scrollTarget: 0 },
+  home: {
+    exposure: 1.0,
+    contrast: 1.0,
+    fogLift: 0.12,
+    liquify: 0.0,
+    drift: 1.0,
+    submerge: 0,
+    vignette: 0,
+    warmth: 0.08,
+    scrollTarget: 0,
+  },
   // writing 的 scrollTarget=-0.07 与 WritingIndex 的 Lenis 静置映射一致；
   // 整个 writing 页常驻「水下」：submerge 维持明显正值（光柱/气泡/冷调/整帧水色），
   // liquify 足够高让折射被鼠标与滚动持续搅动；vignette 0.12 维持轻微深水视野收窄
-  writing: { exposure: 1.45, contrast: 0.8, fogLift: 0.72, liquify: 0.28, drift: 0.4, submerge: 0.5, vignette: 0.12, scrollTarget: -0.07 },
-  // article 比 writing 更深：submerge 0.62 > 0.5（继续下沉）、liquify 0.12（折射更强但不晃字）、
-  // drift 0.28（漂浮更明显）、exposure 1.18（光衰减）、vignette 0.2（更深 → 视野更窄）。
-  // dive 峰值 1 → 着陆落到 0.62 = 沉到更深水底。
-  article: { exposure: 1.18, contrast: 0.88, fogLift: 0.62, liquify: 0.12, drift: 0.28, submerge: 0.62, vignette: 0.2, scrollTarget: 0 },
-  quiet: { exposure: 1.2, contrast: 0.86, fogLift: 0.52, liquify: 0.04, drift: 0.2, submerge: 0, vignette: 0, scrollTarget: 0 },
+  writing: {
+    exposure: 1.45,
+    contrast: 0.8,
+    fogLift: 0.72,
+    liquify: 0.28,
+    drift: 0.4,
+    submerge: 0.5,
+    vignette: 0.12,
+    warmth: 0,
+    scrollTarget: -0.07,
+  },
+  // article：破水上岸。无液体、无冷青、阅读优先。
+  // 高曝光 + warmth 做阳光透亮；drift 保留克制的大厅景深呼吸；fog 压低求澄净。
+  article: {
+    exposure: 1.34,
+    contrast: 0.96,
+    fogLift: 0.18,
+    liquify: 0,
+    drift: 0.42,
+    submerge: 0,
+    vignette: 0.03,
+    warmth: 0.72,
+    scrollTarget: 0,
+  },
+  quiet: {
+    exposure: 1.2,
+    contrast: 0.86,
+    fogLift: 0.52,
+    liquify: 0.04,
+    drift: 0.2,
+    submerge: 0,
+    vignette: 0,
+    warmth: 0.15,
+    scrollTarget: 0,
+  },
 };
 
 /**
@@ -76,6 +128,22 @@ export const DIVE_PEAK = {
   liquify: 1.15,
   submerge: 1,
   vignette: 0.78,
+  warmth: 0,
+};
+
+/**
+ * 破水而出峰值（writing → article）。
+ * 水面张力拉到最大、短暂亮化，随后 warmth 接管、水体退尽。
+ * 与 DIVE_PEAK 对称：一个沉入深水，一个穿出水面。
+ */
+export const EMERGE_PEAK = {
+  exposure: 1.72,
+  contrast: 0.9,
+  fogLift: 0.55,
+  liquify: 0.95,
+  submerge: 0.22,
+  vignette: 0.08,
+  warmth: 0.35,
 };
 
 export function modeForPath(pathname: string): SceneMode {
