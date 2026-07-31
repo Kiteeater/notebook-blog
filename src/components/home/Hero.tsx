@@ -31,22 +31,22 @@ export default function Hero({ postCount }: { postCount: number }) {
       data-page="home"
       className="relative flex h-[100dvh] flex-col items-center justify-center overflow-hidden px-6 text-center"
     >
-      {/* 中央排版：眉题 → 衬线斜体 → 无衬线 */}
+      {/* 中央排版：副标题 → 衬线斜体标题 → 主文案 */}
       <p data-enter className="eyebrow mb-7">
-        个人研究观测站 · A Research Observatory
+        Break the Circle.
       </p>
       <h1 className="select-none">
         <span
           data-enter
-          className="block font-serif text-[clamp(2.9rem,8.5vw,7rem)] italic leading-[1.04] tracking-[-0.01em] text-ink-950"
+          className="block font-serif text-[clamp(2.4rem,7vw,5.6rem)] italic leading-[1.04] tracking-[-0.01em] text-ink-950"
         >
-          Field notes
+          思考的碎片
         </span>
         <span
           data-enter
-          className="mt-1 block font-sans text-[clamp(2rem,5.6vw,4.6rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-ink-950"
+          className="mt-2 block font-sans text-[clamp(1.15rem,3.2vw,2.4rem)] font-semibold leading-[1.1] tracking-[-0.03em] text-ink-700"
         >
-          关于代码、智能体与系统
+          Field notes on AI.
         </span>
       </h1>
 
@@ -77,7 +77,6 @@ export default function Hero({ postCount }: { postCount: number }) {
         className="absolute inset-x-0 bottom-0 flex items-end justify-between px-5 pb-6 font-sans text-[10.5px] uppercase tracking-[0.2em] text-ink-600 sm:px-8"
       >
         <span>观测中 — {postCount} 条记录</span>
-        <span className="hidden sm:inline">Code / Agents / Systems</span>
         <span>© 2026</span>
       </div>
     </main>

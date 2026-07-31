@@ -77,7 +77,7 @@ export default function GlobalHeader() {
           思考的碎片
         </span>
         <span className="hidden font-sans text-[10px] font-medium uppercase tracking-[0.24em] text-ink-500 transition-colors duration-500 group-hover:text-ink-800 sm:inline">
-          Pieces of Memory
+          Break the Circle
         </span>
       </button>
 

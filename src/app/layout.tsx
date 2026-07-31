@@ -31,11 +31,10 @@ const jetbrains = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "思考的碎片 — 个人研究观测站",
+    default: "思考的碎片 — Break the Circle",
     template: "%s — 思考的碎片",
   },
-  description:
-    "一个关于编程、AI、系统设计与个人思考的数字研究观测站。Field notes on code, agents & systems.",
+  description: "Field notes on AI. Break the Circle.",
 };
 
 export const viewport: Viewport = {
