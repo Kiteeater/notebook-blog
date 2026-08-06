@@ -15,7 +15,8 @@ function isActive(pathname: string, href: string) {
   return pathname.startsWith(href);
 }
 
-/** 单个导航项：button 本体挂液体推流（x/y/skewX），内层 .nav-swap 做 masked slide。 */
+/** 单个导航项：button 本体挂液体推流（x/y/skewX），内层 .nav-swap 做 masked slide。
+ *  active 态：swap-b(serif italic) 默认停在原位，hover 时反向滑回 sans —— 切页有滑入过渡，hover 仍可动。 */
 function NavLink({
   href,
   label,
@@ -38,20 +39,16 @@ function NavLink({
       onPointerEnter={() => onPrefetch(href)}
       data-active={active}
       aria-current={active ? "page" : undefined}
-      className="nav-swap font-sans text-[13px] font-medium text-ink-800"
+      className="nav-link font-sans text-[13px] font-medium text-ink-800"
     >
-      <span className={active ? "swap-a" : "swap-a"}>
-        {active ? (
-          <span className="font-serif italic">{label}</span>
-        ) : (
-          label
-        )}
-      </span>
-      {!active && (
+      {/* swap 容器独立成层：与 button 的 padding 解耦，避免 absolute swap-b 贴 padding box 错位。
+          data-active 透传给 .nav-swap，让 swap 规则能区分选中态（active 不参与 hover swap） */}
+      <span className="nav-swap" data-active={active}>
+        <span className="swap-a">{label}</span>
         <span className="swap-b" aria-hidden="true">
           {label}
         </span>
-      )}
+      </span>
     </button>
   );
 }

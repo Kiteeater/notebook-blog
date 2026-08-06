@@ -58,7 +58,10 @@ export default function Hero({ postCount }: { postCount: number }) {
           onPointerEnter={() => prefetch("/writing")}
           className="pill bg-paper-50/60 text-ink-950 backdrop-blur-[2px]"
         >
-          View writing
+          <span className="pill-label">
+            <span className="swap-a">view writing</span>
+            <span className="swap-b" aria-hidden="true">view writing</span>
+          </span>
           <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true">
             <path
               d="M2 10L10 2M10 2H3.5M10 2v6.5"

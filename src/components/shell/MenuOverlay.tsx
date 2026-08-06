@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useTransition } from "./TransitionProvider";
+import { sceneState } from "@/lib/sceneState";
 
 const ITEMS = [
   { href: "/", label: "Index", num: "01" },
@@ -22,6 +23,15 @@ export default function MenuOverlay() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [setMenuOpen]);
+
+  // 同步菜单开合到 sceneState：打开时禁用背景拖拽 pan
+  useEffect(() => {
+    sceneState.menuOpen = menuOpen;
+    if (menuOpen) {
+      sceneState.panTX = 0;
+      sceneState.panTY = 0;
+    }
+  }, [menuOpen]);
 
   return (
     <div

@@ -17,6 +17,7 @@ uniform vec2 uRes;
 uniform float uTime;
 uniform vec2 uMouse;
 uniform float uScroll;
+uniform vec2 uPan;
 uniform float uExposure;
 uniform float uContrast;
 uniform float uFogLift;
@@ -75,6 +76,9 @@ vec3 hall(vec2 p, float t) {
 
   /* 左上缓慢漂移的天光 */
   vec2 lp = vec2(-0.52 + 0.09 * sin(t * 0.05), 0.86 + 0.05 * cos(t * 0.043));
+  /* 日源随 pan 偏移：相机平移时远处光源视差，强化空间纵深 */
+  lp.x += uPan.x * 0.06;
+  lp.y += uPan.y * 0.03;
   col += vec3(0.12, 0.115, 0.105) * exp(-3.2 * length(p - lp));
 
   /* 三层碑板，由远及近 */
@@ -85,6 +89,10 @@ vec3 hall(vec2 p, float t) {
     vec2 q = p;
     q.x += uMouse.x * 0.055 * par + uDrift * 0.012 * sin(t * 0.06 + fl * 2.1);
     q.y += uMouse.y * 0.028 * par + uScroll * (0.2 + 0.3 * par);
+    /* 假 3D：pan 驱动相机平移，近景层(depth 小)位移大、远景层位移小 → 深度错觉 */
+    float panStr = 0.18 * par;
+    q.x += uPan.x * panStr;
+    q.y += uPan.y * panStr * 0.7;
 
     float w = 0.34 - 0.06 * fl;
     float row = q.x / w + 3.0 * fl;
@@ -162,6 +170,8 @@ void main() {
   }
 
   float floorY = 0.34;
+  /* 地平线随 pan.y 上下：向下拖相机往下看 → 地平线上移露出更多地面，反之抬起 */
+  floorY += uPan.y * 0.05;
   vec3 col;
   if (p.y < floorY) {
     /* 反射地面：镜像大厅 + 波纹扰动 */

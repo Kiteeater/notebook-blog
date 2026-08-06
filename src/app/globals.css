@@ -61,7 +61,7 @@
     @apply font-sans text-[11px] font-medium uppercase tracking-[0.22em] text-ink-600;
   }
 
-  /* 胶囊按钮 */
+  /* 胶囊按钮：hover 时 sans→serif italic 文字 swap（对齐 unseen 的签名交互） */
   .pill {
     @apply inline-flex items-center gap-2 rounded-full border px-5 py-2.5 font-sans text-[13px] font-medium transition-all duration-500;
     border-color: var(--hairline-strong);
@@ -70,6 +70,31 @@
   .pill:hover {
     @apply bg-ink-950 text-paper-50;
     border-color: transparent;
+  }
+  /* 文字 swap：默认 sans medium，hover 浮上 serif italic（复用 nav-swap 的 masked slide 语义） */
+  .pill .pill-label {
+    position: relative;
+    display: inline-block;
+    overflow: hidden;
+    line-height: 1.2;
+  }
+  .pill .pill-label .swap-a,
+  .pill .pill-label .swap-b {
+    display: block;
+    transition: transform 0.42s var(--ease-observatory);
+  }
+  .pill .pill-label .swap-b {
+    position: absolute;
+    inset: 0;
+    transform: translateY(110%);
+    font-family: var(--font-serif);
+    font-style: italic;
+  }
+  .pill:hover .pill-label .swap-a {
+    transform: translateY(-110%);
+  }
+  .pill:hover .pill-label .swap-b {
+    transform: translateY(0);
   }
 
   .pill-filter {
@@ -84,8 +109,33 @@
   .pill-filter[data-active="true"] {
     @apply border-transparent bg-ink-950 text-paper-50;
   }
+  /* 文字 swap：仅非 active 时触发（active 靠实心反白区分，不再 swap 避免信息过载） */
+  .pill-filter:not([data-active="true"]) .pill-label {
+    position: relative;
+    display: inline-block;
+    overflow: hidden;
+    line-height: 1.2;
+  }
+  .pill-filter:not([data-active="true"]) .pill-label .swap-a,
+  .pill-filter:not([data-active="true"]) .pill-label .swap-b {
+    display: block;
+    transition: transform 0.42s var(--ease-observatory);
+  }
+  .pill-filter:not([data-active="true"]) .pill-label .swap-b {
+    position: absolute;
+    inset: 0;
+    transform: translateY(110%);
+    font-family: var(--font-serif);
+    font-style: italic;
+  }
+  .pill-filter:not([data-active="true"]):hover .pill-label .swap-a {
+    transform: translateY(-110%);
+  }
+  .pill-filter:not([data-active="true"]):hover .pill-label .swap-b {
+    transform: translateY(0);
+  }
   .pill-filter .count {
-    @apply text-[10px] opacity-60;
+    @apply text-[11px] opacity-75;
   }
 
   /* 搜索切换 icon：描边圆角胶囊，hover/active 实心深底（对齐菜单按钮语义） */
@@ -181,13 +231,40 @@
   font-family: var(--font-serif);
   font-style: italic;
 }
-.nav-swap:hover .swap-a,
-.nav-swap:focus-visible .swap-a {
+/* swap 仅在非 active 时触发：选中是状态不是交互，hover 只做背景反馈（与 FilterPill 同源） */
+.nav-swap:not([data-active="true"]):hover .swap-a,
+.nav-swap:not([data-active="true"]):focus-visible .swap-a {
   transform: translateY(-110%);
 }
-.nav-swap:hover .swap-b,
-.nav-swap:focus-visible .swap-b {
+.nav-swap:not([data-active="true"]):hover .swap-b,
+.nav-swap:not([data-active="true"]):focus-visible .swap-b {
   transform: translateY(0);
+}
+
+/* active 态：swap-b(serif italic) 默认停在原位，静态显示，不参与 hover swap */
+.nav-swap[data-active="true"] .swap-a {
+  transform: translateY(-110%);
+}
+.nav-swap[data-active="true"] .swap-b {
+  transform: translateY(0);
+}
+
+/* ---------- 导航胶囊：active 时变深色描边胶囊反白 ---------- */
+.nav-link {
+  @apply rounded-full px-3.5 py-1.5 transition-all duration-500;
+  transition-timing-function: var(--ease-observatory);
+}
+/* 非选中：透明底，hover 时轻底色（不抢 FilterPill 的视觉权重） */
+.nav-link:not([data-active="true"]):hover {
+  background: rgba(23, 21, 18, 0.05);
+}
+/* 选中：深底反白，与 FilterPill / 菜单按钮同源 */
+.nav-link[data-active="true"] {
+  @apply border-transparent bg-ink-950 text-paper-50;
+}
+.nav-link[data-active="true"] .swap-a,
+.nav-link[data-active="true"] .swap-b {
+  color: theme("colors.paper.50");
 }
 
 /* ---------- 文章索引网格 ---------- */

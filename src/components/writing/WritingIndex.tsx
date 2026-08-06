@@ -56,7 +56,19 @@ function FilterPill({
       onClick={onClick}
       aria-pressed={active}
     >
-      {label}
+      <span className="pill-label">
+        {active ? (
+          // active 态：不 swap，直接显示（实心反白已是选中信号）
+          <span className="swap-a">{label}</span>
+        ) : (
+          <>
+            <span className="swap-a">{label}</span>
+            <span className="swap-b" aria-hidden="true">
+              {label}
+            </span>
+          </>
+        )}
+      </span>
       <span className="count">{count}</span>
     </button>
   );

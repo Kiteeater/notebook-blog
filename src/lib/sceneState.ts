@@ -34,6 +34,12 @@ export const sceneState = {
   // 鼠标速度向量（每帧差分 + 衰减，停手归零）；BuoyantField 消费做「顺流拖」
   mouseVX: 0,
   mouseVY: 0,
+  // 拖拽平移相机（假 3D 视差）。pointerdown 写 target，render loop 缓动 current。
+  // 松手后 target 缓慢回零 → panX 自然回落 → 视角自动回正。
+  panTX: 0, // -1..1 目标
+  panTY: 0,
+  panX: 0, // 缓动后当前值，喂 shader
+  panY: 0,
   // 虚拟滚动带来的镜头漂移
   scroll: 0,
   scrollTarget: 0,
@@ -61,6 +67,8 @@ export const sceneState = {
 
   reduced: false,
   webgl: true,
+  /** 全屏菜单是否打开（MenuOverlay 同步）。打开时禁用拖拽 pan */
+  menuOpen: false,
 };
 
 export const SCENE_PRESETS: Record<SceneMode, SceneUniformValues> = {

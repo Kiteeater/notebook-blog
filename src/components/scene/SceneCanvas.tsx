@@ -38,6 +38,7 @@ export default function SceneCanvas() {
       uTime: { value: 0 },
       uMouse: { value: new THREE.Vector2(0, 0) },
       uScroll: { value: 0 },
+      uPan: { value: new THREE.Vector2(0, 0) },
       uExposure: { value: sceneState.exposure },
       uContrast: { value: sceneState.contrast },
       uFogLift: { value: sceneState.fogLift },
@@ -73,6 +74,10 @@ export default function SceneCanvas() {
       if (e.pointerType === "touch") return;
       sceneState.mouseTX = (e.clientX / window.innerWidth) * 2 - 1;
       sceneState.mouseTY = -((e.clientY / window.innerHeight) * 2 - 1);
+      // pan：鼠标位置直接映射成相机平移目标（归一化 -1..1）。
+      // 与 mouseX 视差解耦：mouseX 做轻量碑板偏移，pan 做整体空间深度平移。
+      sceneState.panTX = sceneState.mouseTX;
+      sceneState.panTY = sceneState.mouseTY;
     };
     window.addEventListener("pointermove", onPointer, { passive: true });
 
@@ -96,6 +101,18 @@ export default function SceneCanvas() {
         (sceneState.scrollTarget + sceneState.wheelImpulse - sceneState.scroll) *
         k *
         0.25;
+
+      // pan 缓动：跟随鼠标位置（pointermove 实时写 target）。
+      // 慢系数让平移有惯性感，停手即停、移开回中。
+      if (!sceneState.reduced) {
+        sceneState.panX += (sceneState.panTX - sceneState.panX) * k * 0.08;
+        sceneState.panY += (sceneState.panTY - sceneState.panY) * k * 0.08;
+      } else {
+        sceneState.panX = 0;
+        sceneState.panY = 0;
+        sceneState.panTX = 0;
+        sceneState.panTY = 0;
+      }
 
       // 速度向量：鼠标/滚动的瞬时差分 + 低通衰减，停手归零。
       // 统一在渲染循环算一次，避免 BuoyantField 等多处重复差分。
@@ -121,6 +138,10 @@ export default function SceneCanvas() {
         sceneState.reduced ? 0 : sceneState.mouseY,
       );
       uniforms.uScroll.value = sceneState.scroll;
+      uniforms.uPan.value.set(
+        sceneState.reduced ? 0 : sceneState.panX,
+        sceneState.reduced ? 0 : sceneState.panY,
+      );
       uniforms.uExposure.value = sceneState.exposure;
       uniforms.uContrast.value = sceneState.contrast;
       uniforms.uFogLift.value = sceneState.fogLift;
