@@ -174,11 +174,10 @@ export function coverArtSvg(slug: string, category?: string): string {
   parts.push(`<rect x="0" y="${n(horizon + 1)}" width="${W}" height="2.5" fill="#3f392e" opacity="0.14"/>`);
 
   // 主题印记：分类 key 与图形的映射。
-  //   paper-reading → 错落折线（文献/书脊，含「引用块」的矩形标题区）
-  //   soul          → 圆点矩阵（呼吸感的点阵）
-  //   tech          → 碑文式矩形阵列（代码/碑文质感）
-  //   projects      → 三条横线（文字行印记，呼应「项目叙事」）
-  if (motif === "paper-reading") {
+  //   daily-paper → 错落折线（文献/书脊，含「引用块」的矩形标题区）
+  //   tech        → 碑文式矩形阵列（代码/碑文质感）
+  //   musings     → 圆点矩阵（呼吸感的点阵）
+  if (motif === "daily-paper") {
     parts.push(
       `<g stroke="#4c463a" stroke-width="1" opacity="0.5">
   <rect x="${motifX}" y="${motifY}" width="42" height="5" fill="#4c463a" stroke="none" opacity="0.85"/>
@@ -187,7 +186,7 @@ export function coverArtSvg(slug: string, category?: string): string {
   <line x1="${motifX + 4}" y1="${motifY + 36}" x2="${motifX + 80}" y2="${motifY + 36}" stroke-dasharray="3 3"/>
 </g>`,
     );
-  } else if (motif === "soul") {
+  } else if (motif === "musings") {
     const dots: string[] = [];
     for (let r = 0; r < 4; r++) {
       for (let c = 0; c < 6; c++) {
@@ -206,14 +205,6 @@ export function coverArtSvg(slug: string, category?: string): string {
       }
     }
     parts.push(`<g fill="#4c463a" opacity="0.5">${rects.join("")}</g>`);
-  } else if (motif === "projects") {
-    parts.push(
-      `<g stroke="#4c463a" stroke-width="2" opacity="0.5">
-  <line x1="${motifX}" y1="${motifY}" x2="${motifX + 92}" y2="${motifY}"/>
-  <line x1="${motifX}" y1="${motifY + 16}" x2="${motifX + 64}" y2="${motifY + 16}"/>
-  <line x1="${motifX}" y1="${motifY + 32}" x2="${motifX + 78}" y2="${motifY + 32}"/>
-</g>`,
-    );
   }
 
   // 扫描线 + 颗粒 + 暗角

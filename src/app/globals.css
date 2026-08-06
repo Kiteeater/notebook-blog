@@ -9,6 +9,8 @@
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
   --ease-observatory: cubic-bezier(0.22, 1, 0.36, 1);
+  /* 入场专用：更干脆的 decelerate，让内容快速落位，与环境层的绵长拉开层次 */
+  --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
   --hairline: rgba(23, 21, 18, 0.14);
   --hairline-strong: rgba(23, 21, 18, 0.32);
 }
@@ -85,6 +87,79 @@
   .pill-filter .count {
     @apply text-[10px] opacity-60;
   }
+
+  /* 搜索切换 icon：描边圆角胶囊，hover/active 实心深底（对齐菜单按钮语义） */
+  .search-icon-btn {
+    @apply inline-flex h-[30px] w-[30px] items-center justify-center rounded-full border text-ink-700 transition-all duration-500;
+    border-color: var(--hairline);
+    background: rgba(245, 242, 235, 0.55);
+    transition-timing-function: var(--ease-observatory);
+  }
+  .search-icon-btn:hover,
+  .search-icon-btn[data-active="true"] {
+    @apply border-transparent bg-ink-950 text-paper-50;
+  }
+
+  /* 搜索输入框：pill-filter 同源的描边胶囊，但拉长 + 内含 input */
+  .search-field {
+    position: relative;
+    @apply inline-flex items-center gap-2 rounded-full border px-4 font-sans text-[12px];
+    border-color: var(--hairline);
+    color: theme("colors.ink.700");
+    background: rgba(245, 242, 235, 0.55);
+    min-width: 220px;
+    height: 30px;
+    transition:
+      border-color 0.4s var(--ease-observatory),
+      background 0.4s var(--ease-observatory);
+  }
+  .search-field[data-focused="true"] {
+    border-color: var(--hairline-strong);
+    background: rgba(245, 242, 235, 0.9);
+  }
+  .search-field .search-icon-inline {
+    @apply flex shrink-0 items-center text-ink-500;
+  }
+  .search-field[data-focused="true"] .search-icon-inline {
+    color: theme("colors.ink.800");
+  }
+  /* masked-slide placeholder（复用 .nav-swap 的 swap-a/swap-b） */
+  .search-field .search-placeholder {
+    pointer-events: none;
+    position: absolute;
+    left: 36px;
+    right: 36px;
+    color: theme("colors.ink.400");
+    line-height: 30px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .search-field .search-placeholder .swap-a.shifted {
+    transform: translateY(-110%);
+  }
+  .search-field .search-placeholder .swap-b {
+    color: theme("colors.ink.500");
+  }
+  .search-field .search-input {
+    @apply flex-1 bg-transparent font-sans text-[12px];
+    color: theme("colors.ink.900");
+    border: none;
+    outline: none;
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+  }
+  /* 右侧清空按钮：仅 value 非空时渲染 */
+  .search-clear {
+    @apply flex shrink-0 items-center justify-center rounded-full text-ink-500 transition-all duration-300;
+    width: 16px;
+    height: 16px;
+    transition-timing-function: var(--ease-observatory);
+  }
+  .search-clear:hover {
+    color: theme("colors.ink.950");
+    background: rgba(23, 21, 18, 0.08);
+  }
 }
 
 /* ---------- 导航：sans → serif italic 互换 ---------- */
@@ -97,7 +172,7 @@
 .nav-swap .swap-a,
 .nav-swap .swap-b {
   display: block;
-  transition: transform 0.55s var(--ease-observatory);
+  transition: transform 0.42s var(--ease-observatory);
 }
 .nav-swap .swap-b {
   position: absolute;
@@ -138,7 +213,10 @@
 }
 .post-item:hover .cover-media {
   transform: scale(1.035);
+  /* 对齐 WebGL 路径的「拱起受光」质感：saturate/contrast + 受光面高光。
+     DOM 降级无 shader 拱起，靠 inset highlight 补偿一点点隆起错觉 */
   filter: saturate(1.08) contrast(1.03) blur(0px);
+  box-shadow: inset 0 14px 34px -18px rgba(255, 251, 240, 0.7);
 }
 .post-item .post-title {
   transition: transform 0.6s var(--ease-observatory);
@@ -322,18 +400,19 @@
   }
 }
 
-/* 非 JS 环境下的保底入场；JS 转场会接管 */
+/* 非 JS 环境下的保底入场；JS 转场会接管。
+   入场用 enter 曲线 + 0.5s：快速落位，与 cover-media/post-item 的环境缓动(0.6–0.9s)拉开层次 */
 [data-enter] {
-  animation: rise 0.9s var(--ease-observatory) both;
+  animation: rise 0.5s var(--ease-enter) both;
 }
 [data-enter="1"] {
-  animation-delay: 0.08s;
+  animation-delay: 0.06s;
 }
 [data-enter="2"] {
-  animation-delay: 0.16s;
+  animation-delay: 0.12s;
 }
 [data-enter="3"] {
-  animation-delay: 0.24s;
+  animation-delay: 0.18s;
 }
 
 /* 转场期间锁定指针与滚轮 */

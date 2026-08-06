@@ -7,13 +7,12 @@
  * 不要在组件里硬编码中文文案——一律走 `categoryLabel`。
  */
 
-export type CategoryKey = "paper-reading" | "soul" | "tech" | "projects";
+export type CategoryKey = "daily-paper" | "tech" | "musings";
 
 export const CATEGORIES: { key: CategoryKey; label: string }[] = [
-  { key: "paper-reading", label: "paper reading" },
-  { key: "soul", label: "soul 感想" },
-  { key: "tech", label: "技术学习" },
-  { key: "projects", label: "个人项目展示" },
+  { key: "daily-paper", label: "Daily Paper" },
+  { key: "tech", label: "Engineering" },
+  { key: "musings", label: "Musings" },
 ];
 
 /** 把 category key 翻译成显示文案；未知值原样返回，缺省返回「未分类」。 */

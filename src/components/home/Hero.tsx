@@ -31,22 +31,22 @@ export default function Hero({ postCount }: { postCount: number }) {
       data-page="home"
       className="relative flex h-[100dvh] flex-col items-center justify-center overflow-hidden px-6 text-center"
     >
-      {/* 中央排版：副标题 → 衬线斜体标题 → 主文案 */}
+      {/* 中央排版：中文主标题 → 英文注脚 → 入口 */}
       <p data-enter className="eyebrow mb-7">
-        Break the Circle.
+        Field notes on AI.
       </p>
       <h1 className="select-none">
         <span
           data-enter
-          className="block font-serif text-[clamp(2.4rem,7vw,5.6rem)] italic leading-[1.04] tracking-[-0.01em] text-ink-950"
+          className="block font-display text-[clamp(2.6rem,7vw,5.6rem)] font-medium leading-[1.04] tracking-[-0.02em] text-ink-950"
         >
           思考的碎片
         </span>
         <span
           data-enter
-          className="mt-2 block font-sans text-[clamp(1.15rem,3.2vw,2.4rem)] font-semibold leading-[1.1] tracking-[-0.03em] text-ink-700"
+          className="mt-3 block font-serif text-[clamp(1.05rem,2.4vw,1.6rem)] italic leading-[1.3] tracking-[-0.005em] text-ink-600"
         >
-          Field notes on AI.
+          不追求完整的答案，只记录正在发生的思考。
         </span>
       </h1>
 

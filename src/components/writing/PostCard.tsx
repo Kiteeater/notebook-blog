@@ -24,7 +24,7 @@ export default function PostCard({ post }: { post: PostMeta }) {
   const phase = phaseForSlug(post.slug);
 
   return (
-    <article className="post-item" data-enter style={{ willChange: "transform" }}>
+    <article className="post-item group" data-enter style={{ willChange: "transform" }}>
       <div className="buoyant" data-buoyant data-phase={phase}>
         <a
           href={href}

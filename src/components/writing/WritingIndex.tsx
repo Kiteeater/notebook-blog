@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Lenis from "lenis";
 import PostCard from "./PostCard";
 import BuoyantField from "./BuoyantField";
@@ -11,6 +18,21 @@ import { sceneState } from "@/lib/sceneState";
 import { categoryLabel } from "@/lib/categories";
 import { useLiquidPush } from "@/components/liquid/liquidControls";
 import type { PostMeta } from "@/lib/types";
+
+type View = "filters" | "search";
+
+/** 文章是否命中搜索词：title / description / tags / 分类文案（小写包含）。 */
+function postMatches(post: PostMeta, q: string): boolean {
+  const hay = [
+    post.title,
+    post.description,
+    post.tags.join(" "),
+    categoryLabel(post.category),
+  ]
+    .join(" ")
+    .toLowerCase();
+  return hay.includes(q);
+}
 
 /** 单个筛选 pill：button 本体挂液体推流，内层文字随鼠标方向轻位移。 */
 function FilterPill({
@@ -40,6 +62,103 @@ function FilterPill({
   );
 }
 
+/** 搜索切换 icon：放大镜描边按钮，点击在「分类 / 搜索」视图间切换。
+ *  搜索态下不再挂推流（避免输入区附近文字漂移）。 */
+function SearchToggle({
+  active,
+  onClick,
+}: {
+  active: boolean;
+  onClick: () => void;
+}) {
+  const ref = useLiquidPush<HTMLButtonElement>(!active);
+  return (
+    <button
+      ref={ref}
+      type="button"
+      onClick={onClick}
+      aria-label={active ? "返回分类筛选" : "搜索文章"}
+      aria-pressed={active}
+      data-active={active}
+      className="search-icon-btn"
+    >
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.2" />
+        <path
+          d="M10.5 10.5L14 14"
+          stroke="currentColor"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+        />
+      </svg>
+    </button>
+  );
+}
+
+/** 搜索输入框：圆角描边胶囊，聚焦时 placeholder 走 nav-swap masked slide。
+ *  右侧 ✕ 仅在有输入时显示，清空并切回分类视图。 */
+const SearchField = forwardRef<
+  HTMLInputElement,
+  { value: string; onChange: (v: string) => void; onClear: () => void }
+>(function SearchField({ value, onChange, onClear }, ref) {
+  const inner = useRef<HTMLInputElement>(null);
+  const [focused, setFocused] = useState(false);
+  useImperativeHandle(ref, () => inner.current as HTMLInputElement, []);
+  const lifted = focused || value.length > 0;
+  return (
+    <div className="search-field" data-focused={focused}>
+      <span className="search-icon-inline" aria-hidden="true">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+          <circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.2" />
+          <path
+            d="M10.5 10.5L14 14"
+            stroke="currentColor"
+            strokeWidth="1.2"
+            strokeLinecap="round"
+          />
+        </svg>
+      </span>
+      <span className="nav-swap search-placeholder">
+        <span className={lifted ? "swap-a shifted" : "swap-a"}>搜索文章…</span>
+        <span className="swap-b">输入关键词</span>
+      </span>
+      <input
+        ref={inner}
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            e.preventDefault();
+            onClear();
+          }
+        }}
+        aria-label="搜索文章"
+        className="search-input"
+      />
+      {value && (
+        <button
+          type="button"
+          onClick={onClear}
+          aria-label="清空搜索"
+          className="search-clear"
+        >
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+            <path
+              d="M1.5 1.5L8.5 8.5M8.5 1.5L1.5 8.5"
+              stroke="currentColor"
+              strokeWidth="1.3"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
+      )}
+    </div>
+  );
+});
+
 type Props = {
   posts: PostMeta[];
   categories: { name: string; count: number }[];
@@ -55,6 +174,10 @@ const ALL = "All";
  */
 export default function WritingIndex({ posts, categories }: Props) {
   const [filter, setFilter] = useState<string>(ALL);
+  /** 视图模式：分类筛选 / 搜索输入（互斥，复用 liquid-rise-in crossfade） */
+  const [view, setView] = useState<View>("filters");
+  const [query, setQuery] = useState("");
+  const [debounced, setDebounced] = useState("");
   /** 虚拟滚动是否激活（桌面 + 非 reduced-motion 时由 Lenis effect 开启） */
   const [vs, setVs] = useState(false);
   /** WebGL 初始化失败时退回 DOM 网格（仍可能保留普通文档滚动） */
@@ -63,6 +186,7 @@ export default function WritingIndex({ posts, categories }: Props) {
   const contentRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const lenisRef = useRef<Lenis | null>(null);
   const rafRef = useRef(0);
   // WebGL 卡片层共享状态（桌面 vs=true 时启用）：rects 由场景写入，hover 由命中层写入
@@ -81,8 +205,19 @@ export default function WritingIndex({ posts, categories }: Props) {
   const countOf = (name: string) =>
     name === ALL ? posts.length : posts.filter((p) => p.category === name).length;
 
+  // 搜索 debounce：120ms 后把 query 写入 debounced，触发 filtered 重算
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(query.trim().toLowerCase()), 120);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const searched = useMemo(
+    () => (debounced ? posts.filter((p) => postMatches(p, debounced)) : posts),
+    [posts, debounced],
+  );
+
   const filtered =
-    filter === ALL ? posts : posts.filter((p) => p.category === filter);
+    filter === ALL ? searched : searched.filter((p) => p.category === filter);
 
   const desktop = () =>
     window.matchMedia("(min-width: 768px)").matches && !sceneState.reduced;
@@ -187,6 +322,15 @@ export default function WritingIndex({ posts, categories }: Props) {
     }
   }, [filter]);
 
+  // 搜索结果变化：回到顶部（轻量，不抢焦点）
+  useEffect(() => {
+    const lenis = lenisRef.current;
+    if (lenis) {
+      lenis.scrollTo(0, { immediate: true });
+      requestAnimationFrame(() => lenis.resize());
+    }
+  }, [debounced]);
+
   // vs 布局稳定后（占位高度 / 视口 absolute 就位）再量一次，保证 limit 与 WebGL 进度对齐
   useEffect(() => {
     if (!vs) return;
@@ -195,6 +339,22 @@ export default function WritingIndex({ posts, categories }: Props) {
     requestAnimationFrame(() => lenis.resize());
   }, [vs, filtered.length]);
   // 标题区弧形压缩已并入 BuoyantField（写入内层 .buoyant），此处不再单独 tick。
+
+  /** 切到搜索视图：清空旧词、聚焦输入框。 */
+  const enterSearch = () => {
+    setQuery("");
+    setDebounced("");
+    setView("search");
+    requestAnimationFrame(() => inputRef.current?.focus());
+  };
+
+  /** 退出搜索：清空 + 回分类视图。 */
+  const exitSearch = () => {
+    setQuery("");
+    setDebounced("");
+    setView("filters");
+    inputRef.current?.blur();
+  };
 
   return (
     <div
@@ -226,21 +386,39 @@ export default function WritingIndex({ posts, categories }: Props) {
         >
           Selected Writing
         </h1>
-        <div
-          data-enter
-          className="pointer-events-auto mt-6 flex flex-wrap items-center justify-center gap-2"
-          role="group"
-          aria-label="按分类筛选"
-        >
-          {pills.map((name) => (
-            <FilterPill
-              key={name}
-              label={name === ALL ? ALL : categoryLabel(name)}
-              count={countOf(name)}
-              active={filter === name}
-              onClick={() => setFilter(name)}
-            />
-          ))}
+        <div className="pointer-events-auto mt-6 flex flex-wrap items-center justify-center gap-2">
+          {/* 搜索切换 icon（常驻左侧） */}
+          <SearchToggle
+            active={view === "search"}
+            onClick={view === "search" ? exitSearch : enterSearch}
+          />
+          {/* 控件区：key 随 view 切换 → 重挂载 → liquid-rise-in 浮上 */}
+          <div key={view} className="segmented-pane">
+            {view === "filters" ? (
+              <div
+                className="flex flex-wrap items-center justify-center gap-2"
+                role="group"
+                aria-label="按分类筛选"
+              >
+                {pills.map((name) => (
+                  <FilterPill
+                    key={name}
+                    label={name === ALL ? ALL : categoryLabel(name)}
+                    count={countOf(name)}
+                    active={filter === name}
+                    onClick={() => setFilter(name)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <SearchField
+                ref={inputRef}
+                value={query}
+                onChange={setQuery}
+                onClear={exitSearch}
+              />
+            )}
+          </div>
         </div>
       </div>
 
@@ -266,7 +444,7 @@ export default function WritingIndex({ posts, categories }: Props) {
         >
           {filtered.length === 0 ? (
             <p className="py-24 text-center font-sans text-sm text-ink-500">
-              该分类下暂无文章。
+              {debounced ? "未找到匹配文章。" : "该分类下暂无文章。"}
             </p>
           ) : useGl ? (
             <div
