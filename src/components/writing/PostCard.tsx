@@ -58,10 +58,20 @@ export default function PostCard({ post }: { post: PostMeta }) {
               <h3 className="post-title font-sans text-[17px] font-medium leading-snug text-ink-950">
                 {post.title}
               </h3>
-              <p className="mt-2 font-sans text-[12px] tracking-wide text-ink-500">
-                {categoryLabel(post.category)} · {formatDate(post.date)}
-                {post.readingTime ? ` · ${post.readingTime}` : ""}
-              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-[12px] tracking-wide text-ink-500">
+                {post.series && post.seriesTitle && (
+                  <span
+                    className="series-chip inline-flex items-center rounded-full border px-2 py-[1px] text-[10px] uppercase tracking-[0.16em] text-ink-700"
+                    style={{ borderColor: "var(--hairline)" }}
+                  >
+                    {post.seriesTitle}
+                  </span>
+                )}
+                <span>
+                  {categoryLabel(post.category)} · {formatDate(post.date)}
+                  {post.readingTime ? ` · ${post.readingTime}` : ""}
+                </span>
+              </div>
             </div>
             <svg
               width="13"

@@ -1,5 +1,6 @@
 import WritingIndex from "@/components/writing/WritingIndex";
 import { getAllPosts } from "@/lib/posts";
+import { getAllSeries } from "@/lib/series";
 
 export const metadata = {
   title: "Selected Writing",
@@ -17,5 +18,9 @@ export default async function WritingPage() {
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 
-  return <WritingIndex posts={posts} categories={categories} />;
+  const seriesCount = getAllSeries().length;
+
+  return (
+    <WritingIndex posts={posts} categories={categories} seriesCount={seriesCount} />
+  );
 }

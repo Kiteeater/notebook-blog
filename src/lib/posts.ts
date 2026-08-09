@@ -65,6 +65,8 @@ export function getAllPosts(): PostMeta[] {
       tags: (data.tags as string[]) ?? [],
       category,
       readingTime: data.readingTime as string | undefined,
+      series: data.series as string | undefined,
+      seriesTitle: data.seriesTitle as string | undefined,
     } satisfies PostMeta;
   });
 
@@ -143,6 +145,8 @@ export async function getPost(slug: string): Promise<Post | null> {
     tags: (data.tags as string[]) ?? [],
     category: found.category,
     readingTime: data.readingTime as string | undefined,
+    series: data.series as string | undefined,
+    seriesTitle: data.seriesTitle as string | undefined,
     contentHtml: html,
     headings,
   };

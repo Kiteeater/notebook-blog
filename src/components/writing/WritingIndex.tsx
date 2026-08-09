@@ -17,6 +17,7 @@ import type { CardRect } from "./cardScene";
 import { sceneState } from "@/lib/sceneState";
 import { categoryLabel } from "@/lib/categories";
 import { useLiquidPush } from "@/components/liquid/liquidControls";
+import { useTransition } from "@/components/shell/TransitionProvider";
 import type { PostMeta } from "@/lib/types";
 
 type View = "filters" | "search";
@@ -174,6 +175,7 @@ const SearchField = forwardRef<
 type Props = {
   posts: PostMeta[];
   categories: { name: string; count: number }[];
+  seriesCount?: number;
 };
 
 const ALL = "All";
@@ -184,7 +186,8 @@ const ALL = "All";
  * 经过标题区域时产生克制的弧形压缩（透镜形变），离开后恢复。
  * 移动端 / reduced-motion：正常文档滚动，无形变。
  */
-export default function WritingIndex({ posts, categories }: Props) {
+export default function WritingIndex({ posts, categories, seriesCount = 0 }: Props) {
+  const { navigate, prefetch } = useTransition();
   const [filter, setFilter] = useState<string>(ALL);
   /** 视图模式：分类筛选 / 搜索输入（互斥，复用 liquid-rise-in crossfade） */
   const [view, setView] = useState<View>("filters");
@@ -373,6 +376,22 @@ export default function WritingIndex({ posts, categories }: Props) {
       data-page="writing"
       className={`relative ${useGl ? "h-[100dvh] overflow-hidden" : ""}`}
     >
+      {/* 右上角 Series 入口：仅当存在系列时显示。
+          定位在 header 菜单钮左侧（让出 w-10 + gap，避免重叠）。 */}
+      {seriesCount > 0 && (
+        <button
+          type="button"
+          onClick={() => navigate("/series")}
+          onPointerEnter={() => prefetch("/series")}
+          className="series-link fixed right-[68px] top-[30px] z-30 inline-flex items-center gap-1.5 rounded-full border bg-paper-50/70 px-3 py-1.5 font-sans text-[11px] font-medium uppercase tracking-[0.18em] text-ink-700 transition-colors duration-500 hover:bg-ink-950 hover:text-paper-50 sm:right-[88px]"
+          style={{ borderColor: "var(--hairline)" }}
+          aria-label="查看所有系列"
+        >
+          <span>Series</span>
+          <span className="tabular-nums opacity-60">{seriesCount}</span>
+        </button>
+      )}
+
       {/* 顶部雾纱：网格经过时溶入雾中，保证固定标题可读 */}
       {useGl && (
         <div
